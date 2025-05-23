@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Town Oil Dashboard</title>
+    
+    <!-- FullCalendar Dependencies -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    
+    <style>
+        :root {
+            --primary-color: #1a3b5d;
+            --secondary-color: #2c6e49;
+            --accent-color: #f4a261;
+            --danger-color: #e76f51;
+            --success-color: #2a9d8f;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            grid-column: 1 / 3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 28px;
+        }
+        
+        .auth-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #0f2942;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        #calendar-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            padding: 20px;
+            height: calc(100vh - 140px);
+            overflow: hidden;
+        }
+        
+        /* FullCalendar Custom Styling */
+        #calendar {
+            height: 100%;
+        }
+        
+        .fc {
+            font-family: inherit;
+            height: 100%;
+        }
+        
+        .fc-event-title {
+            font-weight: 500;
+        }
+        
+        /* Task styling */
+        .fc-event.task-pending {
+            background-color: #22c55e !important;
+            border-color: #16a34a !important;
+            color: white !important;
+            font-weight: 500;
+        }
+        
+        .fc-event.task-completed {
+            background-color: #9ca3af !important;
+            border-color: #6b7280 !important;
+            color: #374151 !important;
+            opacity: 0.8;
+        }
+        
+        /* Stronger strikethrough for completed tasks */
+        .fc-event.task-completed .fc-event-title {
+            text-decoration: line-through !important;
+            text-decoration-thickness: 2px !important;
+            text-decoration-color: #374151 !important;
+        }
+        
+        /* Calendar event styling */
+        .fc-event.calendar-event {
+            background-color: #1a3b5d !important;
+            border-color: #0f2942 !important;
+            color: white !important;
+        }
+        
+        /* FullCalendar header styling to match dashboard */
+        .fc-toolbar {
+            margin-bottom: 1em;
+        }
+        
+        .fc-toolbar-title {
+            color: var(--primary-color);
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+        
+        .fc-button-primary {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+        }
+        
+        .fc-button-primary:hover {
+            background-color: #0f2942 !important;
+            border-color: #0f2942 !important;
+        }
+        
+        .fc-button-primary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(26, 59, 93, 0.25) !important;
+        }
+        
+        #kpi-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: calc(100vh - 140px);
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        
+        .kpi-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            padding: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 15px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            padding: 20px;
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .setup-instructions {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .setup-instructions h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        
+        .setup-instructions code {
+            background-color: rgba(0,0,0,0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 992px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                grid-column: 1;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .header-left {
+                width: 100%;
+            }
+            
+            .auth-section {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .logo {
+                height: 35px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            #calendar-section, #kpi-section {
+                height: auto;
+                max-height: none;
+            }
+            
+            #calendar-section {
+                min-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="header-left">
+                <img id="company-logo" class="logo" style="display: none;" alt="Company Logo">
+                <h1>Town Oil Dashboard</h1>
+            </div>
+            <div class="auth-section">
+                <span id="last-updated">Last updated: --</span>
+                <button id="auth-button" class="btn">Sign in with Google</button>
+                <button id="refresh-button" class="btn btn-secondary" style="display: none;">Refresh Data</button>
+            </div>
+        </div>
+        
+        <div id="calendar-section">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Calendar loading...</p>
+            </div>
+        </div>
+        
+        <div id="kpi-section">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Please sign in to view KPI data</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google API Client Library -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client"></script>
+    
+    <script>
+        // =====================================================================
+        // REPLACE THESE VALUES WITH YOUR OWN CREDENTIALS
+        // =====================================================================
+        
+        // Replace with your API Key from Google Cloud Console
+        const API_KEY = 'AIzaSyBoENOYWJ3MMDPIVQQolMo1WGXr9uHvJpY'; 
+        
+        // Replace with your OAuth 2.0 Client ID from Google Cloud Console
+        const CLIENT_ID = '94308351247-bp59e65dprth67rrn64qdiug5udti6am.apps.googleusercontent.com';
+        
+        // Replace with your Google Sheets ID (from the URL)
+        // Example: https://docs.google.com/spreadsheets/d/1ABC123XYZ/edit
+        // Use: 1ABC123XYZ
+        const SPREADSHEET_ID = '167YqrzZbDdxBEJQZ3jq_KrwJwvbkrIjYM2JmNPpB84I';
+        
+        // Replace with your Google Calendar ID
+        // Example: your_calendar_id@group.calendar.google.com
+        const CALENDAR_ID = 'ce5e99b196da1da8eb13c6b2a1b81ab46b6204e15f72455235afa80b2b0827e8@group.calendar.google.com';
+        
+        // Replace with your company logo URL
+        // Example: 'https://your-website.com/logo.png' or './logo.png' for local file
+        const LOGO_URL = './logo.png';
+        
+        // The range of columns to fetch from the spreadsheet
+        const RANGE = 'A:G';
+        
+        // Auto-refresh interval (15 minutes)
+        const REFRESH_INTERVAL = 15 * 60 * 1000;
+        
+        // =====================================================================
+        
+        // API Discovery Docs and Scopes - UPDATED TO INCLUDE TASKS
+        const DISCOVERY_DOCS = [
+            "https://sheets.googleapis.com/$discovery/rest?version=v4",
+            "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+            "https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest"
+        ];
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly';
+        
+        // DOM Elements
+        const authButton = document.getElementById('auth-button');
+        const refreshButton = document.getElementById('refresh-button');
+        const lastUpdated = document.getElementById('last-updated');
+        const calendarSection = document.getElementById('calendar-section');
+        const kpiSection = document.getElementById('kpi-section');
+        const companyLogo = document.getElementById('company-logo');
+        
+        // State variables
+        let isAuthenticated = false;
+        let refreshTimer = null;
+        let tokenClient;
+        let fullCalendar = null; // Store calendar instance
+        
+        // Initialize logo if URL is provided
+        function initializeLogo() {
+            if (LOGO_URL && LOGO_URL !== 'YOUR_LOGO_URL_HERE') {
+                companyLogo.src = LOGO_URL;
+                companyLogo.style.display = 'block';
+                
+                // Handle logo load error
+                companyLogo.onerror = function() {
+                    console.warn('Failed to load logo from:', LOGO_URL);
+                    companyLogo.style.display = 'none';
+                };
+            }
+        }
+        
+        // Check if we're running from a local file
+        if (window.location.protocol === 'file:') {
+            showError(`
+                <strong>Error:</strong> This dashboard cannot run directly from a local file due to browser security restrictions.
+                <div class="setup-instructions">
+                    <h3>How to serve this file:</h3>
+                    <p><strong>Option 1 (Python):</strong></p>
+                    <ol>
+                        <li>Open command prompt/terminal in the folder containing this file</li>
+                        <li>Run: <code>python -m http.server 8000</code></li>
+                        <li>Open <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></li>
+                    </ol>
+                    <p><strong>Option 2 (Node.js):</strong></p>
+                    <ol>
+                        <li>Install: <code>npm install -g http-server</code></li>
+                        <li>Run: <code>http-server -p 8000</code></li>
+                        <li>Open <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></li>
+                    </ol>
+                </div>
+            `);
+        }
+        
+        // Initialize the API client when the page loads
+        function handleClientLoad() {
+            gapi.load('client', initClient);
+        }
+        
+        // Initialize the API client
+        function initClient() {
+            console.log('Initializing Google API client...');
+            
+            gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: DISCOVERY_DOCS
+            }).then(() => {
+                console.log('Google API client initialized');
+                
+                // Initialize the OAuth2 token client
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (response) => {
+                        if (response.error !== undefined) {
+                            console.error('Token client error:', response);
+                            showError(`Authentication error: ${response.error}`);
+                            return;
+                        }
+                        console.log('Token received:', response);
+                        updateSignInStatus(true);
+                    },
+                });
+                
+                // Attach click handlers
+                authButton.onclick = handleAuthClick;
+                refreshButton.onclick = refreshData;
+                
+                // Setup visibility change detection
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                
+                // Check if API credentials have been set
+                if (API_KEY === 'YOUR_API_KEY_HERE' || CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
+                    showSetupInstructions();
+                } else {
+                    // Ready for authentication
+                    updateSignInStatus(false);
+                }
+            }).catch(error => {
+                console.error('Error initializing Google API client:', error);
+                showError(`
+                    <strong>API Initialization Error:</strong> ${error.message || 'Failed to initialize Google API client'}
+                    <br><br>
+                    <strong>Possible causes:</strong>
+                    <ul>
+                        <li>Invalid API credentials</li>
+                        <li>APIs not enabled in Google Cloud Console</li>
+                        <li>Network connectivity issues</li>
+                    </ul>
+                `);
+            });
+        }
+        
+        function showSetupInstructions() {
+            const instructions = `
+                <div class="setup-instructions">
+                    <h3>🔧 Setup Required</h3>
+                    <p>Please replace the placeholder values in the code with your actual Google Cloud credentials:</p>
+                    <ul>
+                        <li><strong>API_KEY:</strong> Your Google Cloud API key</li>
+                        <li><strong>CLIENT_ID:</strong> Your OAuth 2.0 Client ID</li>
+                        <li><strong>SPREADSHEET_ID:</strong> Your Google Sheets document ID</li>
+                        <li><strong>CALENDAR_ID:</strong> Your Google Calendar ID</li>
+                        <li><strong>LOGO_URL:</strong> Your company logo URL (optional)</li>
+                    </ul>
+                    <p>📋 <strong>Need help?</strong> Follow the setup guide provided with this dashboard.</p>
+                </div>
+            `;
+            calendarSection.innerHTML = instructions;
+            kpiSection.innerHTML = instructions;
+        }
+        
+        // Update UI based on authentication status
+        function updateSignInStatus(isSignedIn) {
+            console.log('Auth status changed:', isSignedIn);
+            isAuthenticated = isSignedIn;
+            
+            if (isSignedIn) {
+                authButton.textContent = 'Sign Out';
+                authButton.onclick = handleSignOutClick;
+                refreshButton.style.display = 'inline-block';
+                
+                // Load dashboard data
+                loadDashboard();
+                
+                // Start refresh timer
+                startRefreshTimer();
+                
+                // Update last updated time
+                updateLastUpdated();
+            } else {
+                authButton.textContent = 'Sign in with Google';
+                authButton.onclick = handleAuthClick;
+                refreshButton.style.display = 'none';
+                
+                // Clear timer
+                if (refreshTimer) {
+                    clearInterval(refreshTimer);
+                    refreshTimer = null;
+                }
+                
+                // Reset the dashboard to loading state
+                calendarSection.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Please sign in to view calendar</p>
+                    </div>
+                `;
+                
+                kpiSection.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Please sign in to view KPI data</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Handle sign-in button click
+        function handleAuthClick() {
+            console.log('Sign in button clicked');
+            if (tokenClient) {
+                tokenClient.requestAccessToken();
+            } else {
+                showError('Authentication not initialized. Please refresh the page.');
+            }
+        }
+        
+        // Handle sign-out button click
+        function handleSignOutClick() {
+            console.log('Sign out clicked');
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+            }
+            updateSignInStatus(false);
+        }
+        
+        // Handle visibility change (tab focus)
+        function handleVisibilityChange() {
+            if (document.visibilityState === 'visible' && isAuthenticated) {
+                console.log('Tab is now visible, refreshing data');
+                refreshData();
+            }
+        }
+        
+        // Start the refresh timer
+        function startRefreshTimer() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+            
+            refreshTimer = setInterval(() => {
+                if (isAuthenticated) {
+                    console.log('Auto-refreshing data');
+                    refreshData();
+                }
+            }, REFRESH_INTERVAL);
+            
+            console.log('Refresh timer started, will refresh every', REFRESH_INTERVAL / 60000, 'minutes');
+        }
+        
+        // Load the dashboard components
+        function loadDashboard() {
+            loadCalendar();
+            fetchSheetData();
+        }
+        
+        // Refresh dashboard data
+        function refreshData() {
+            if (!isAuthenticated) return;
+            
+            console.log('Refreshing dashboard data');
+            fetchSheetData();
+            
+            // Refresh calendar data if FullCalendar is loaded
+            if (fullCalendar) {
+                fullCalendar.refetchEvents();
+            }
+            
+            // Update the last updated timestamp
+            updateLastUpdated();
+        }
+        
+        // Update the last updated timestamp
+        function updateLastUpdated() {
+            const now = new Date();
+            lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+        
+        // UPDATED: Load FullCalendar with Google Calendar + Tasks Integration
+        function loadCalendar() {
+            console.log('Loading FullCalendar with Google integration...');
+            
+            // Create calendar container
+            calendarSection.innerHTML = '<div id="calendar"></div>';
+            
+            const calendarEl = document.getElementById('calendar');
+            
+            fullCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                height: '100%',
+                
+                events: async function(fetchInfo, successCallback, failureCallback) {
+                    try {
+                        console.log('Fetching calendar data for:', fetchInfo.startStr, 'to', fetchInfo.endStr);
+                        const events = [];
+                        
+                        // Make sure gapi is loaded and authorized
+                        if (!window.gapi || !gapi.auth2 || !gapi.client.getToken()) {
+                            console.error('Google API not authorized');
+                            failureCallback('Google API not authorized');
+                            return;
+                        }
+                        
+                        // 1. Fetch Google Calendar Events
+                        try {
+                            const calResp = await gapi.client.calendar.events.list({
+                                calendarId: CALENDAR_ID,
+                                timeMin: fetchInfo.startStr,
+                                timeMax: fetchInfo.endStr,
+                                singleEvents: true,
+                                orderBy: 'startTime'
+                            });
+                            
+                            console.log('Calendar events:', calResp.result.items?.length || 0);
+                            
+                            (calResp.result.items || []).forEach(ev => {
+                                events.push({
+                                    id: 'cal_' + ev.id,
+                                    title: ev.summary || '(No title)',
+                                    start: ev.start.dateTime || ev.start.date,
+                                    end: ev.end.dateTime || ev.end.date,
+                                    allDay: !ev.start.dateTime,
+                                    className: 'calendar-event',
+                                    extendedProps: {
+                                        type: 'calendar-event',
+                                        source: 'google-calendar'
+                                    }
+                                });
+                            });
+                        } catch (error) {
+                            console.error('Error fetching calendar events:', error);
+                        }
+                        
+                        // 2. Fetch Google Tasks from available task lists
+                        try {
+                            // First, get all task lists
+                            const taskListsResp = await gapi.client.tasks.tasklists.list();
+                            console.log('Task lists found:', taskListsResp.result.items?.length || 0);
+                            
+                            if (taskListsResp.result.items && taskListsResp.result.items.length > 0) {
+                                // Log all available task lists for debugging
+                                taskListsResp.result.items.forEach((list, index) => {
+                                    console.log(`Task List ${index}: "${list.title}" (ID: ${list.id})`);
+                                });
+                                
+                                // Use the first task list (usually the default "My Tasks")
+                                const taskListId = taskListsResp.result.items[0].id;
+                                console.log('Using task list:', taskListsResp.result.items[0].title, 'ID:', taskListId);
+                                
+                                const tasksResp = await gapi.client.tasks.tasks.list({
+                                    tasklist: taskListId,
+                                    showCompleted: true,
+                                    showDeleted: false,
+                                    showHidden: true,
+                                    maxResults: 100
+                                });
+                                
+                                console.log('Tasks found:', tasksResp.result.items?.length || 0);
+                            
+                                (tasksResp.result.items || []).forEach(task => {
+                                    if (task.due) {
+                                        const dueDate = task.due.split('T')[0]; // Convert RFC3339 to date
+                                        
+                                        // Only include tasks in the visible date range
+                                        if (dueDate >= fetchInfo.startStr && dueDate < fetchInfo.endStr) {
+                                            const isCompleted = task.status === 'completed';
+                                            
+                                            events.push({
+                                                id: 'task_' + task.id,
+                                                title: '📋 ' + (task.title || '(No title)'),
+                                                start: dueDate,
+                                                allDay: true,
+                                                className: isCompleted ? 'task-completed' : 'task-pending',
+                                                extendedProps: {
+                                                    type: 'task',
+                                                    status: task.status,
+                                                    source: 'google-tasks',
+                                                    taskId: task.id
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Error fetching tasks:', error);
+                            console.error('Tasks API error details:', error.result?.error || error.message);
+                        }
+                        
+                        console.log('Total events loaded:', events.length);
+                        successCallback(events);
+                        
+                    } catch (error) {
+                        console.error('Error in calendar events function:', error);
+                        failureCallback(error);
+                    }
+                },
+                
+                // Click handler for events
+                eventClick: function(info) {
+                    const props = info.event.extendedProps;
+                    if (props.type === 'task') {
+                        alert(`Task: ${info.event.title}\nStatus: ${props.status}\nDue: ${info.event.start.toDateString()}`);
+                    } else {
+                        alert(`Event: ${info.event.title}\nStart: ${info.event.start.toDateString()}`);
+                    }
+                },
+                
+                // Loading indicator
+                loading: function(bool) {
+                    if (bool) {
+                        console.log('Loading calendar data...');
+                    } else {
+                        console.log('Calendar data loaded');
+                    }
+                }
+            });
+            
+            fullCalendar.render();
+        }
+        
+        // Fetch data from Google Sheets
+        function fetchSheetData() {
+            if (!isAuthenticated) return;
+            
+            console.log('Fetching sheet data...');
+            
+            kpiSection.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading KPI data...</p>
+                </div>
+            `;
+            
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: RANGE
+            }).then(response => {
+                console.log('Sheet data received:', response);
+                
+                const values = response.result.values || [];
+                
+                if (values.length > 0) {
+                    processSheetData(values);
+                    updateLastUpdated();
+                } else {
+                    showError('No data found in the spreadsheet. Please make sure your Google Sheet contains data.');
+                }
+            }).catch(error => {
+                console.error('Error fetching sheet data:', error);
+                showError(`
+                    Failed to fetch data from Google Sheets. 
+                    <br><br>
+                    <strong>Error:</strong> ${error.message || error.result?.error?.message || 'Unknown error'}
+                    <br><br>
+                    <strong>Possible causes:</strong>
+                    <ul>
+                        <li>Incorrect Spreadsheet ID</li>
+                        <li>Spreadsheet not shared or published</li>
+                        <li>Insufficient permissions</li>
+                    </ul>
+                `);
+            });
+        }
+        
+        // Process the sheet data
+        function processSheetData(values) {
+            // Check if the first row might be headers
+            const startIndex = (values[0][0].toLowerCase() === 'month' || 
+                              isNaN(parseFloat(values[0][1]))) ? 1 : 0;
+            
+            // Process data rows
+            const processedData = [];
+            
+            for (let i = startIndex; i < values.length; i++) {
+                const row = values[i];
+                
+                // Skip rows with insufficient data
+                if (row.length < 3) continue;
+                
+                // Extract and process values
+                const item = {
+                    month: row[0] || '',
+                    targetSales: parseFloat(row[1]) || 0,
+                    actualSales: parseFloat(row[2]) || 0,
+                    // Proposals data is in columns F (index 5) and G (index 6)
+                    proposalsSent: row.length > 5 ? (parseInt(row[5]) || 0) : 0,
+                    proposalsAccepted: row.length > 6 ? (parseInt(row[6]) || 0) : 0
+                };
+                
+                // Calculate derived values
+                item.salesPercentage = item.targetSales > 0 ? 
+                    (item.actualSales / item.targetSales) * 100 : 0;
+                
+                item.acceptanceRate = item.proposalsSent > 0 ? 
+                    (item.proposalsAccepted / item.proposalsSent) * 100 : 0;
+                
+                // Add to processed data array
+                processedData.push(item);
+            }
+            
+            console.log('Processed data:', processedData);
+            
+            if (processedData.length === 0) {
+                showError('No valid data rows found in the spreadsheet. Please check your data format.');
+                return;
+            }
+            
+            // Render KPI cards
+            renderKPICards(processedData);
+        }
+        
+        // Helper function to sort months in descending order (most recent first)
+        function sortByMonth(data) {
+            return data.sort((a, b) => {
+                // Try to parse as dates first
+                const dateA = parseMonthToDate(a.month);
+                const dateB = parseMonthToDate(b.month);
+                
+                // Sort in descending order (most recent first)
+                return dateB - dateA;
+            });
+        }
+        
+        // Helper function to parse month strings to Date objects
+        function parseMonthToDate(monthStr) {
+            if (!monthStr) return new Date(0);
+            
+            // Try parsing as full date first (e.g., "January 2024", "Jan 2024")
+            let date = new Date(monthStr + ' 1'); // Add day to make it a valid date
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+            
+            // Try with current year if no year specified
+            const currentYear = new Date().getFullYear();
+            date = new Date(monthStr + ' 1, ' + currentYear);
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+            
+            // Fallback: try to map common month formats
+            const monthMappings = {
+                'january': 0, 'jan': 0,
+                'february': 1, 'feb': 1,
+                'march': 2, 'mar': 2,
+                'april': 3, 'apr': 3,
+                'may': 4,
+                'june': 5, 'jun': 5,
+                'july': 6, 'jul': 6,
+                'august': 7, 'aug': 7,
+                'september': 8, 'sep': 8, 'sept': 8,
+                'october': 9, 'oct': 9,
+                'november': 10, 'nov': 10,
+                'december': 11, 'dec': 11
+            };
+            
+            const monthLower = monthStr.toLowerCase().trim();
+            const monthIndex = monthMappings[monthLower];
+            
+            if (monthIndex !== undefined) {
+                return new Date(currentYear, monthIndex, 1);
+            }
+            
+            // Final fallback: return epoch
+            return new Date(0);
+        }
+        
+        // Render the KPI cards
+        function renderKPICards(data) {
+            if (!data || data.length === 0) {
+                showError('No valid data to display.');
+                return;
+            }
+            
+            // Clear the KPI section
+            kpiSection.innerHTML = '';
+            
+            // Filter data to only include months with actual sales data
+            const monthsWithActualSales = data.filter(monthData => monthData.actualSales > 0);
+            
+            // Sort both datasets by month (most recent first)
+            const sortedSalesData = sortByMonth([...monthsWithActualSales]);
+            const sortedAllData = sortByMonth([...data]);
+            
+            // Calculate summary data only for months with actual sales
+            const totalTargetSales = monthsWithActualSales.reduce((sum, item) => sum + item.targetSales, 0);
+            const totalActualSales = monthsWithActualSales.reduce((sum, item) => sum + item.actualSales, 0);
+            const totalSalesPercentage = totalTargetSales > 0 ? 
+                (totalActualSales / totalTargetSales) * 100 : 0;
+            
+            const totalProposalsSent = monthsWithActualSales.reduce((sum, item) => sum + item.proposalsSent, 0);
+            const totalProposalsAccepted = monthsWithActualSales.reduce((sum, item) => sum + item.proposalsAccepted, 0);
+            const totalAcceptanceRate = totalProposalsSent > 0 ? 
+                (totalProposalsAccepted / totalProposalsSent) * 100 : 0;
+            
+            // Generate Sales cards only for months with actual sales data (sorted by most recent first)
+            sortedSalesData.forEach(monthData => {
+                const salesCard = createSalesCard(monthData);
+                kpiSection.appendChild(salesCard);
+            });
+            
+            // Generate Proposals cards for months that have proposal data (sorted by most recent first)
+            sortedAllData.forEach(monthData => {
+                if (monthData.proposalsSent > 0) {
+                    const proposalsCard = createProposalsCard(monthData);
+                    kpiSection.appendChild(proposalsCard);
+                }
+            });
+            
+            // Generate Summary card only if there are months with actual sales
+            if (monthsWithActualSales.length > 0) {
+                const summaryCard = createSummaryCard({
+                    totalTargetSales,
+                    totalActualSales,
+                    totalSalesPercentage,
+                    totalProposalsSent,
+                    totalProposalsAccepted,
+                    totalAcceptanceRate
+                });
+                
+                kpiSection.appendChild(summaryCard);
+            } else {
+                // Show a message if no actual sales data exists yet
+                const noDataCard = document.createElement('div');
+                noDataCard.className = 'kpi-card';
+                noDataCard.style.textAlign = 'center';
+                noDataCard.style.color = '#666';
+                noDataCard.innerHTML = `
+                    <h3 style="margin-bottom: 15px;">📊 No Sales Data Available</h3>
+                    <p>Sales cards will appear here once actual sales data is entered in the spreadsheet.</p>
+                `;
+                kpiSection.appendChild(noDataCard);
+            }
+        }
+        
+        // Create a Sales KPI card
+        function createSalesCard(data) {
+            const card = document.createElement('div');
+            card.className = 'kpi-card';
+            card.id = `${data.month.toLowerCase()}-sales`;
+            
+            // Calculate the progress bar color - green if at/above target, transitioning to red below
+            const progressColor = data.salesPercentage >= 100 ? 
+                '#2a9d8f' : // Success color
+                `hsl(${Math.min(data.salesPercentage * 1.2, 120)}, 70%, 50%)`; // Red to green gradient
+            
+            // Format currency values
+            const formattedTarget = formatCurrency(data.targetSales);
+            const formattedActual = formatCurrency(data.actualSales);
+            const formattedRemaining = formatCurrency(Math.max(0, data.targetSales - data.actualSales));
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: #1a3b5d; font-size: 18px;">${data.month} Sales</h3>
+                    <span style="font-size: 20px;">📈</span>
+                </div>
+                
+                <div style="font-size: 28px; font-weight: 700; margin: 15px 0;">${formattedActual}</div>
+                
+                <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                    Target: ${formattedTarget}
+                </div>
+                
+                <div style="background-color: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden; margin: 15px 0;">
+                    <div style="background-color: ${progressColor}; height: 100%; width: ${Math.min(data.salesPercentage, 100)}%; 
+                        transition: width 1s ease-in-out, background-color 1s;"></div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                    <span>Progress</span>
+                    <span>${data.salesPercentage.toFixed(1)}%</span>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 14px; color: #666;">
+                    ${data.salesPercentage >= 100 ? 
+                        'Target achieved! 🎉' : 
+                        `${formattedRemaining} remaining to target`}
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Create a Proposals KPI card
+        function createProposalsCard(data) {
+            const card = document.createElement('div');
+            card.className = 'kpi-card';
+            card.id = `${data.month.toLowerCase()}-proposals`;
+            
+            // Calculate acceptance rate color (green for high, yellow for medium, red for low)
+            const acceptanceColor = data.acceptanceRate >= 70 ? '#2a9d8f' : 
+                                    data.acceptanceRate >= 40 ? '#f4a261' : '#e76f51';
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: #1a3b5d; font-size: 18px;">${data.month} Proposals</h3>
+                    <span style="font-size: 20px;">📋</span>
+                </div>
+                
+                <div style="font-size: 28px; font-weight: 700; margin: 15px 0;">
+                    ${data.proposalsAccepted} / ${data.proposalsSent}
+                </div>
+                
+                <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                    Acceptance Rate: ${data.acceptanceRate.toFixed(1)}%
+                </div>
+                
+                <div style="background-color: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden; margin: 15px 0;">
+                    <div style="background-color: ${acceptanceColor}; height: 100%; width: ${data.acceptanceRate}%; 
+                        transition: width 1s ease-in-out;"></div>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 14px; color: #666;">
+                    ${data.proposalsAccepted} accepted out of ${data.proposalsSent} sent
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Create a Summary KPI card
+        function createSummaryCard(data) {
+            const card = document.createElement('div');
+            card.className = 'kpi-card';
+            card.id = 'summary-card';
+            card.style.backgroundColor = '#1a3b5d';
+            card.style.color = 'white';
+            
+            // Format values
+            const formattedTotalTarget = formatCurrency(data.totalTargetSales);
+            const formattedTotalActual = formatCurrency(data.totalActualSales);
+            const formattedOverall = data.totalSalesPercentage.toFixed(1) + '%';
+            const formattedAcceptance = data.totalAcceptanceRate.toFixed(1) + '%';
+            
+            // Progress bar color for overall progress
+            const progressColor = data.totalSalesPercentage >= 100 ? '#2a9d8f' : 
+                                 data.totalSalesPercentage >= 75 ? '#f4a261' : '#e76f51';
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: white; font-size: 18px;">Overall Performance</h3>
+                    <span style="font-size: 20px;">📊</span>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Total Sales:</span>
+                        <span>${formattedTotalActual}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span>Target:</span>
+                        <span>${formattedTotalTarget}</span>
+                    </div>
+                    
+                    <div style="background-color: rgba(255, 255, 255, 0.2); height: 10px; border-radius: 5px; overflow: hidden; margin: 15px 0;">
+                        <div style="background-color: ${progressColor}; height: 100%; width: ${Math.min(data.totalSalesPercentage, 100)}%; 
+                            transition: width 1s ease-in-out;"></div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 20px;">
+                        <span>Overall Progress</span>
+                        <span>${formattedOverall}</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                        <span>Proposal Acceptance:</span>
+                        <span>${data.totalProposalsAccepted} / ${data.totalProposalsSent} (${formattedAcceptance})</span>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Format currency values
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', { 
+                style: 'currency', 
+                currency: 'USD',
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+        
+        // Show error message
+        function showError(message) {
+            console.error(message);
+            
+            // Display in both sections to ensure visibility
+            const errorHtml = `
+                <div class="error-message">
+                    ${message}
+                </div>
+            `;
+            
+            calendarSection.innerHTML = errorHtml;
+            kpiSection.innerHTML = errorHtml;
+        }
+        
+        // Start initialization when the API is loaded
+        window.onload = function() {
+            initializeLogo();
+            handleClientLoad();
+        };
+    </script>
+</body>
+</html>
